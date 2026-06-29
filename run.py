@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Music Note Reader - Простой запуск
 """
