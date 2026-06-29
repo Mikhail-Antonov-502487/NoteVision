@@ -7,7 +7,6 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.8.1-green.svg)](https://opencv.org/)
 [![NumPy](https://img.shields.io/badge/NumPy-1.24.3-orange.svg)](https://numpy.org/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)]()
 
 </div>
@@ -45,3 +44,11 @@
 - **Pillow 10.0.0** — работа с изображениями
 
 ---
+
+## 📦 Установка
+
+### 1. Клонирование репозитория
+
+```bash
+git clone https://github.com/Mikhail-Antonov-502487/notevision.git
+cd notevision
