@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Music Note Reader - Простой запуск
 """
@@ -16,7 +17,6 @@ from notation_converter import NotationConverter
 
 
 def safe_imread(image_path):
-    """Безопасная загрузка изображения"""
     try:
         image = cv2.imread(str(image_path))
         if image is not None:
@@ -37,7 +37,6 @@ def safe_imread(image_path):
 
 
 def process_image(image_path, show=True, debug=False):
-    """Обработка одного изображения"""
     print(f"\n{'='*50}")
     print(f"Обработка: {Path(image_path).name}")
     print(f"{'='*50}")
@@ -49,13 +48,11 @@ def process_image(image_path, show=True, debug=False):
     
     original = image.copy()
     
-    # 1. Удаление линий стана
     print("1. Удаление линий стана...")
     remover = StaffLineRemover(debug=False)
     staff_mask, staff_lines = remover.extract_staff_lines(image)
     clean_image = remover.remove_staff_lines(image, staff_mask)
     
-   # 2. Извлечение нот с передачей линий стана
     print("2. Поиск нот...")
     extractor = NoteExtractor(staff_lines=staff_lines)
     notes = extractor.extract_notes(clean_image, staff_lines=staff_lines)
@@ -65,12 +62,10 @@ def process_image(image_path, show=True, debug=False):
         print("❌ Ноты не найдены!")
         return None
     
-    # 3. Классификация
     print("3. Классификация нот...")
     classifier = NoteClassifier(clef='treble', debug=debug)
     classified = classifier.classify_all(notes, staff_lines)
     
-    # 4. Конвертация
     print("4. Создание нотации...")
     converter = NotationConverter()
     
@@ -84,34 +79,26 @@ def process_image(image_path, show=True, debug=False):
     for note in classified:
         print(f"  {note['id']}. {note['letter']} ({note['russian']}) - {note['type_ru']}")
     
-    # Сохранение
     output_dir = Path('output_images')
     output_dir.mkdir(exist_ok=True)
     converter.save_all_formats(classified, output_dir, image_path)
     
-    # Визуализация
     if show and notes:
         result = original.copy()
         note_data_map = {n['id']: n for n in classified}
         
-        # Рисуем все найденные ноты
         for note in notes:
             if note.id in note_data_map:
                 note_data = note_data_map[note.id]
-                
-                # Цвет в зависимости от типа
                 color = (0, 0, 255) if note_data['is_filled'] else (255, 100, 0)
                 
-                # Рисуем эллипс или контур
                 if hasattr(note, 'ellipse') and note.ellipse is not None:
                     cv2.ellipse(result, note.ellipse, color, 2)
                 else:
                     cv2.drawContours(result, [note.contour], -1, color, 2)
                 
-                # Центр
                 cv2.circle(result, note.center, 3, (255, 0, 255), -1)
         
-        # Подписи
         for note in notes:
             if note.id in note_data_map:
                 note_data = note_data_map[note.id]
@@ -133,12 +120,10 @@ def process_image(image_path, show=True, debug=False):
                 cv2.putText(result, label, (text_x, text_y),
                            font, 0.6, (0, 0, 255), 2)
         
-        # Сохраняем результат
         result_path = output_dir / f"{Path(image_path).stem}_result.jpg"
         cv2.imwrite(str(result_path), result)
         print(f"\n📁 Результат сохранен: {result_path}")
         
-        # Показываем результат
         plt.figure(figsize=(14, 10))
         plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
         plt.title(f'Результат: {Path(image_path).name}')
