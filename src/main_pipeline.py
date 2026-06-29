@@ -124,4 +124,108 @@ class MusicRecognitionPipeline:
         left = original.copy()
         cv2.putText(left, "Original with Detected Notes", 
                    (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 
-                   0.6
+                   0.6, (0, 0, 0), 2)
+        
+        for note_data in classified:
+            note_obj = None
+            for n in notes:
+                if n.id == note_data['id']:
+                    note_obj = n
+                    break
+            
+            if note_obj:
+                x, y, w_note, h_note = note_obj.bbox
+                
+                if note_data['is_filled']:
+                    color = (0, 0, 255)
+                else:
+                    color = (0, 255, 0)
+                
+                cv2.drawContours(left, [note_obj.contour], -1, color, 2)
+                label = f"{note_data['full_name']}"
+                cv2.putText(left, label, (x, y - 10),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                cv2.circle(left, note_obj.center, 3, (0, 255, 255), -1)
+        
+        result[0:h, 0:w] = left
+        
+        right = clean.copy()
+        cv2.putText(right, "Clean Image (Staff Lines Removed)", 
+                   (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 
+                   0.6, (0, 0, 0), 2)
+        result[0:h, w+margin:w*2+margin] = right
+        
+        y_offset = h + 30
+        
+        letter = self.notation_converter.to_letter_notation(classified)
+        cv2.putText(result, "Letter Notation:", (10, y_offset),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        y_offset += 25
+        cv2.putText(result, letter, (10, y_offset),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+        
+        y_offset += 30
+        russian = self.notation_converter.to_russian_notation(classified)
+        cv2.putText(result, "Russian Notation:", (10, y_offset),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        y_offset += 25
+        cv2.putText(result, russian, (10, y_offset),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+        
+        y_offset += 30
+        total = len(classified)
+        filled = sum(1 for n in classified if n['is_filled'])
+        cv2.putText(result, f"Total: {total} notes (Filled: {filled}, Empty: {total-filled})",
+                   (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
+        
+        return result
+    
+    def _show_result(self, visualization, title):
+        plt.figure(figsize=(16, 8))
+        plt.imshow(cv2.cvtColor(visualization, cv2.COLOR_BGR2RGB))
+        plt.title(f'Results: {title}')
+        plt.axis('off')
+        plt.tight_layout()
+        plt.show()
+
+
+def _visualize_positions(self, image, notes, staff_lines):
+    img = image.copy()
+    
+    if staff_lines is not None:
+        for line in staff_lines:
+            x1, y1, x2, y2 = line[0]
+            cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    
+    for note in notes:
+        x, y = note.center
+        cv2.circle(img, (x, y), 5, (255, 0, 0), -1)
+        cv2.putText(img, f"pos:{note.position}", 
+                   (x - 30, y - 20),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+        cv2.putText(img, f"#{note.id}", 
+                   (x - 10, y + 20),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
+    
+    debug_dir = Path('debug_images')
+    debug_dir.mkdir(exist_ok=True)
+    cv2.imwrite(str(debug_dir / 'positions_debug.jpg'), img)
+    
+    cv2.imshow('Positions Debug', cv2.resize(img, (800, 600)))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    
+    pipeline = MusicRecognitionPipeline(debug=True)
+    input_dir = Path(__file__).parent.parent / "input_images"
+    images = list(input_dir.glob("*.jpg")) + list(input_dir.glob("*.png"))
+    
+    if images:
+        pipeline.process(images[0], save_results=True, show_results=True)
+    else:
+        print(f"No images found in {input_dir}")
+        print("Please add images to the input_images folder")
